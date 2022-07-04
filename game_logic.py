@@ -23,14 +23,58 @@ class GameState:
             'pawn': self.get_pawn_moves, 'rook': self.get_rook_moves, 'knight': self.get_knight_moves,
             'bishop': self.get_bishop_moves, 'queen': self.get_queen_moves, 'king': self.get_king_moves
         }
+        self.move_log = []
+        self.white_king_location = (7, 4)
+        self.black_king_location = (0, 4)
+        self.check_mate = False
+        self.stale_mate = False
 
     def make_move(self, move):
         self.board[move.start[0]][move.start[1]] = '--'
         self.board[move.end[0]][move.end[1]] = move.piece_moved
         self.white_turn = not self.white_turn
+        self.move_log.append(move)
+        if move.piece_moved == 'white_king':
+            self.white_king_location = move.end
+        elif move.piece_moved == 'black_king':
+            self.black_king_location = move.end
+
+    def undo_move(self):
+        if len(self.move_log) != 0:
+            last_move = self.move_log.pop()
+            self.board[last_move.start[0]][last_move.start[1]] = last_move.piece_moved
+            self.board[last_move.end[0]][last_move.end[1]] = last_move.piece_captured
+            self.white_turn = not self.white_turn
 
     def get_legal_moves(self):
-        return self.get_possible_moves()
+        possible_own_moves = self.get_possible_moves()
+        for i in range(len(possible_own_moves) - 1, -1, -1):
+            self.make_move(possible_own_moves[i])
+            self.white_turn = not self.white_turn
+            if self.in_check():
+                possible_own_moves.remove(possible_own_moves[i])
+            self.white_turn = not self.white_turn
+            self.undo_move()
+        if len(possible_own_moves) == 0:
+            if self.in_check():
+                self.check_mate = True
+            else:
+                self.stale_mate = True
+        return possible_own_moves
+
+    def in_check(self):
+        if self.white_turn:
+            return self.square_under_attack(self.white_king_location[0], self.white_king_location[1])
+        return self.square_under_attack(self.black_king_location[0], self.black_king_location[1])
+
+    def square_under_attack(self, king_row, king_col):
+        self.white_turn = not self.white_turn
+        moves = self.get_possible_moves()
+        self.white_turn = not self.white_turn
+        for move in moves:
+            if move.end == (king_row, king_col):
+                return True
+        return False
 
     def get_possible_moves(self):
         moves = []
