@@ -3,6 +3,7 @@ import pygame.image
 import os
 from game_logic import GameState
 from move import Move
+from Network import Network
 
 pygame.init()
 
@@ -15,6 +16,7 @@ class Board:
         self.DIMENSIONS = 8
         self.SQUARE_SIZE = self.HEIGHT // self.DIMENSIONS
         self.IMAGES = dict()
+        self.ready = False
 
     def load_images(self):
         for image in os.listdir(self.path):
@@ -23,19 +25,29 @@ class Board:
                 self.IMAGES[name] = pygame.transform.scale(pygame.image.load(os.path.join(self.path, image)),
                                                       (self.SQUARE_SIZE, self.SQUARE_SIZE))
 
-    def update_board(self):
+    def draw_board(self):
         window = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
-        clock = pygame.time.Clock()
         window.fill(pygame.Color('white'))
-        game_state = GameState()
         self.load_images()
+        return window
+
+    def update_board(self, window, network):
+        game_state = GameState()
         selected_square = tuple()
         player_clicks = []
+        clock = pygame.time.Clock()
         legal_moves = game_state.get_legal_moves()
         move_made = False
 
         running = True
         while running:
+            try:
+                game = network.send('get')
+            except:
+                running = False
+                print('Could not get a game\n')
+                break
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -87,3 +99,14 @@ class Board:
                 if piece != '--':
                     window.blit(self.IMAGES[piece], pygame.Rect(col * self.SQUARE_SIZE, row * self.SQUARE_SIZE,
                                                            self.SQUARE_SIZE, self.SQUARE_SIZE))
+
+
+def main():
+    board = Board()
+    window = board.draw_board()
+    network = Network()
+    board.update_board(window, network)
+
+
+if __name__ == '__main__':
+    main()
