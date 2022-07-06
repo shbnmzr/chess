@@ -17,7 +17,7 @@ To run the program, the following steps should be taken:
 > ` python Board.py `
 3. Notice, step 2 should be performed twice, in order to connect 2 clients to the server.
 ## GUI
-![](screenshot/Board.png)
+![](./screenshot/Board.png)
 
 ## How To Play
 The game is fairly simple and follows regular rules of chess. 
